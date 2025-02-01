@@ -1,0 +1,32 @@
+pipeline {
+    agent any
+    tools {
+         maven 'apache-maven-3.9.9'
+        }
+
+    stages {
+        stage('Git Clone') {
+            steps {
+                git 'https://github.com/Sri-35/MavenHelloWorld.git'
+            }
+        }
+
+        stage('Maven Build') {
+            steps {
+                sh 'mvn clean package'
+            }
+        }
+        
+        stage('publish over ssh') {
+            steps {
+                 sshPublisher(publishers: [sshPublisherDesc(configName: 'DeploymentServer', transfers: [sshTransfer(cleanRemote: false, excludes: '', execCommand: '', execTimeout: 120000, flatten: false, makeEmptyDirs: false, noDefaultExcludes: false, patternSeparator: '[, ]+', remoteDirectory: '/warfilesV2', remoteDirectorySDF: false, removePrefix: 'webapp/target', sourceFiles: 'webapp/target/webapp.war')], usePromotionTimestamp: false, useWorkspaceInPromotion: false, verbose: false)])
+            }
+        }
+         stage('docker img and container creation') {
+            steps {
+                sshPublisher(publishers: [sshPublisherDesc(configName: 'DeploymentServer', transfers: [sshTransfer(cleanRemote: false, excludes: '', execCommand: '''docker build -t customimg .
+                docker run -d -p 8080:8080 --name tomcatv1 customimg''', execTimeout: 120000, flatten: false, makeEmptyDirs: false, noDefaultExcludes: false, patternSeparator: '[, ]+', remoteDirectory: '', remoteDirectorySDF: false, removePrefix: '', sourceFiles: '')], usePromotionTimestamp: false, useWorkspaceInPromotion: false, verbose: false)])
+            }
+        }
+    }
+}
